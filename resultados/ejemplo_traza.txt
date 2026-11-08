@@ -1,0 +1,26 @@
+{"orquestador": {"actual": {"id": 1157, "id_proceso": "CO1.REQ.538812", "regla": "clasificacion_por_validar", "valor_citado": "Mención relacionada / validar objeto", "detalle": "el término funerario aparece, pero no está claro que sea la compra principal", "entidad": "UNIDAD ADMINISTRATIVA ESPECIAL DE SERVICIOS PÚBLICOS..", "anio": 2018.0, "otros_ids": null, "veces_precio_base": null, "mediana_modalidad": null, "mediana_entidad": null, "procesos_entidad": null, "veces_mediana_entidad": null, "veces_valor_adjudicado": null}, "pendientes": [], "intentos": 0}}
+{"evidencia": {"evidencia": {"registros": [{"Entidad": "UNIDAD ADMINISTRATIVA ESPECIAL DE SERVICIOS PÚBLICOS..", "Nit Entidad": "900126860", "Departamento Entidad": "Distrito Capital de Bogotá", "Ciudad Entidad": "Bogotá", "ID del Proceso": "CO1.REQ.538812", "Referencia del Proceso": "UAESP-LP-01-2018 (Presentación de oferta)", "Nombre del Procedimiento": "Contratar a una sociedad fiduciaria para la administración y pago de los recursos destinados para el programa de Subsidios Funerarios a cargo de la Unidad Administrativa Especial de Servicios Públicos", "Descripción del Procedimiento": "Contratar a una sociedad fiduciaria para la administración y pago de los recursos destinados para el programa de Subsidios Funerarios a cargo de la Unidad Administrativa Especial de Servicios Públicos", "Fecha de Publicacion del Proceso": "08/29/2018", "Precio Base": "$289.106.540", "Modalidad de Contratacion": "Licitación pública", "Justificación Modalidad de Contratación": "Ley 1150 de 2007", "Estado del Procedimiento": "Seleccionado", "Adjudicado": "Si", "Valor Total Adjudicacion": "$19.285.740", "Nombre del Proveedor Adjudicado": "FIDUAGRARIA", "Codigo Principal de Categoria": "V1.84121800", "Tipo de Contrato": "Negocio fiduciario", "URLProceso": "https://community.secop.gov.co/Public/Tendering/OpportunityDetail/Index?noticeUID=CO1.NTC.518203"}], "otros": [], "causa_fija": null, "motivo_causa": null}}}
+{"diagnostico": {"diagnostico": {"id_proceso": "CO1.REQ.538812", "causa": "no_funerario", "cita_textual": "Contratar a una sociedad fiduciaria para la administración y pago de los recursos destinados para el programa de Subsidios Funerarios", "conclusion": "Aunque el nombre del proceso menciona subsidios funerarios, el objeto del contrato no es la compra directa de servicios o bienes funerarios, sino la administración de recursos para un programa funerario."}, "intentos": 1}}
+{"verificar_anclaje": {"anclaje": {"anclado": true, "confianza": "alta", "problemas": []}}}
+{"guardar": {"resultados": [{"id": 1157, "id_proceso": "CO1.REQ.538812", "entidad": "UNIDAD ADMINISTRATIVA ESPECIAL DE SERVICIOS PÚBLICOS..", "regla": "clasificacion_por_validar", "valor_citado": "Mención relacionada / validar objeto", "causa": "no_funerario", "decidida_por": "llm", "conclusion": "Aunque el nombre del proceso menciona subsidios funerarios, el objeto del contrato no es la compra directa de servicios o bienes funerarios, sino la administración de recursos para un programa funerario.", "cita_textual": "Contratar a una sociedad fiduciaria para la administración y pago de los recursos destinados para el programa de Subsidios Funerarios", "url_secop": "https://community.secop.gov.co/Public/Tendering/OpportunityDetail/Index?noticeUID=CO1.NTC.518203", "anclado": true, "confianza": "alta", "problemas": "", "intentos": 1}], "anclaje": null}}
+{"orquestador": {"actual": null}}
+{"__interrupt__": ["Interrupt(value={'total': 1, 'para_revisar': []}, id='6598f8c526c927262fe8d44b7154c55f', response_schema=None)"]}
+[
+ {
+  "id": 1157,
+  "id_proceso": "CO1.REQ.538812",
+  "entidad": "UNIDAD ADMINISTRATIVA ESPECIAL DE SERVICIOS PÚBLICOS..",
+  "regla": "clasificacion_por_validar",
+  "valor_citado": "Mención relacionada / validar objeto",
+  "causa": "no_funerario",
+  "decidida_por": "llm",
+  "conclusion": "Aunque el nombre del proceso menciona subsidios funerarios, el objeto del contrato no es la compra directa de servicios o bienes funerarios, sino la administración de recursos para un programa funerario.",
+  "cita_textual": "Contratar a una sociedad fiduciaria para la administración y pago de los recursos destinados para el programa de Subsidios Funerarios",
+  "url_secop": "https://community.secop.gov.co/Public/Tendering/OpportunityDetail/Index?noticeUID=CO1.NTC.518203",
+  "anclado": true,
+  "confianza": "alta",
+  "problemas": "",
+  "intentos": 1,
+  "revision_humana": "aprobado"
+ }
+]

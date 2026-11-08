@@ -41,7 +41,13 @@ CAUSA_FIJA = {
 }
 # Cuando decide el código, la cita también la pone el código: el campo que prueba la causa.
 CAMPO_CITA = {"id_duplicado": h.ID, "adjudicado_sin_valor": "Valor Total Adjudicacion",
-              "categoria_no_definida": "Codigo Principal de Categoria", "precio_base_cero": "Precio Base"}
+              "categoria_no_definida": "Codigo Principal de Categoria", "precio_base_cero": "Precio Base",
+              "precio_atipico": "Precio Base", "adjudicacion_supera_base": "Valor Total Adjudicacion"}
+# Montos que no pueden ser reales: se miden contra la propia entidad, no contra todo SECOP,
+# para no castigar a las entidades grandes (p. ej. Colpensiones queda en 16 veces su mediana).
+MONTO_IMPOSIBLE = 1e12  # un billón de pesos
+VECES_IMPOSIBLE = 100
+ADJUDICACION_IMPOSIBLE = 1.5  # adjudicar 50 % o más por encima del presupuesto oficial
 
 
 def causa_por_codigo(inc: dict, ev: dict) -> tuple[str, str] | tuple[None, None]:
@@ -51,6 +57,16 @@ def causa_por_codigo(inc: dict, ev: dict) -> tuple[str, str] | tuple[None, None]
     modalidad = (ev["registros"][0].get("Modalidad de Contratacion") or "") if ev["registros"] else ""
     if inc["regla"] == "precio_base_cero" and not modalidad.startswith("Solicitud de información"):
         return ("error_de_registro", "proceso activo con precio base $0")
+    if inc["regla"] == "precio_atipico":
+        precio = h.pesos(inc.get("valor_citado"))
+        if precio >= MONTO_IMPOSIBLE:
+            return ("error_de_registro", "precio base de un billón de pesos o más")
+        if (inc.get("procesos_entidad") or 0) >= 3 and (inc.get("veces_mediana_entidad") or 0) >= VECES_IMPOSIBLE:
+            return ("error_de_registro", f"precio base {inc['veces_mediana_entidad']} veces la mediana de la entidad")
+        if (inc.get("veces_valor_adjudicado") or 0) >= VECES_IMPOSIBLE:
+            return ("error_de_registro", f"precio base {inc['veces_valor_adjudicado']} veces el valor adjudicado")
+    if inc["regla"] == "adjudicacion_supera_base" and (inc.get("veces_precio_base") or 0) >= ADJUDICACION_IMPOSIBLE:
+        return ("error_de_registro", f"valor adjudicado {inc['veces_precio_base']} veces el precio base")
     return (None, None)
 
 

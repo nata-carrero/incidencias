@@ -49,6 +49,15 @@ def test_codigo_decide_casos_obvios():
     assert G.causa_por_codigo({"regla": "precio_atipico"}, ev)[0] is None
 
 
+def test_codigo_decide_montos_imposibles_pero_no_contratos_grandes_reales():
+    d = detectar(h.cargar_procesos()).set_index("id_proceso")
+    ev = {"registros": [{}]}
+    causa = lambda id_, regla: G.causa_por_codigo({**d[d["regla"] == regla].loc[id_].to_dict(), "regla": regla}, ev)[0]
+    assert causa("CO1.REQ.387286", "precio_atipico") == "error_de_registro"         # $4,8 billones
+    assert causa("CO1.REQ.1615047", "adjudicacion_supera_base") == "error_de_registro"  # Rionegro
+    assert causa("CO1.REQ.2548914", "precio_atipico") is None                         # Colpensiones: lo juzga el modelo
+
+
 def test_grafo_corta_en_tres_intentos_y_pausa_para_revision(monkeypatch, tmp_path):
     monkeypatch.setattr(G, "generar_json", lambda m, etiqueta: {"causa": "otra"})
     monkeypatch.setattr(G.config, "RESULTADOS", tmp_path)  # no pisar resultados reales

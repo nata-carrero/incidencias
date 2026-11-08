@@ -45,9 +45,14 @@ def detectar(p: pd.DataFrame) -> pd.DataFrame:
     supera = unicos[(unicos["precio_base"] > 0) & (unicos["valor_adjudicado"] > EXCESO_ADJUDICACION * unicos["precio_base"])]
     for _, f in supera.iterrows():
         out.append(_inc("adjudicacion_supera_base", f, f["Valor Total Adjudicacion"],
-                        "el valor adjudicado supera en más de 5 % el precio base"))
+                        "el valor adjudicado supera en más de 5 % el precio base",
+                        veces_precio_base=round(f["valor_adjudicado"] / f["precio_base"], 1)))
 
     positivos = unicos[unicos["precio_base"] > 0].copy()
+    # Referencia propia de cada entidad: cuánto suele costar lo que esa entidad contrata.
+    por_entidad = positivos.groupby("Nit Entidad")["precio_base"]
+    positivos["mediana_entidad"] = por_entidad.transform("median")
+    positivos["procesos_entidad"] = por_entidad.transform("count")
     positivos["log"] = np.log10(positivos["precio_base"])
     g = positivos.groupby("Modalidad de Contratacion")["log"]
     mediana = g.transform("median")
@@ -55,9 +60,13 @@ def detectar(p: pd.DataFrame) -> pd.DataFrame:
     z = (positivos["log"] - mediana) / mad.replace(0, np.nan)
     for idx in positivos.index[z.abs() > Z_ATIPICO]:
         f = positivos.loc[idx]
+        adjudicado = f["valor_adjudicado"] if f["valor_adjudicado"] > 0 else None
         out.append(_inc("precio_atipico", f, f["Precio Base"],
                         "precio base muy lejos de lo usual para su modalidad",
-                        mediana_modalidad=round(10 ** mediana[idx])))
+                        mediana_modalidad=round(10 ** mediana[idx]),
+                        mediana_entidad=round(f["mediana_entidad"]), procesos_entidad=int(f["procesos_entidad"]),
+                        veces_mediana_entidad=round(f["precio_base"] / f["mediana_entidad"], 1),
+                        veces_valor_adjudicado=round(f["precio_base"] / adjudicado, 1) if adjudicado else None))
 
     for _, f in unicos[unicos["Codigo Principal de Categoria"].isin(["UNSPECIFIED", None, "No Definido"])].iterrows():
         out.append(_inc("categoria_no_definida", f, f["Codigo Principal de Categoria"],

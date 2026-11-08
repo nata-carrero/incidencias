@@ -34,8 +34,9 @@ graph TD
 2. **Evidencia (código):** el registro de SECOP II del proceso (y los procesos parecidos, si los hay).
 3. **Diagnóstico:** la causa es una de `error_de_registro`, `registro_duplicado`, `no_funerario`,
    `dato_plausible` o `indeterminado`. Los casos obvios (ID duplicado, adjudicado con $0, UNSPSC
-   vacío, precio $0 fuera de solicitudes de información) los decide el **código**; el **modelo**
-   decide los demás y redacta la conclusión.
+   vacío, precio $0 fuera de solicitudes de información, y montos imposibles: precio base de un
+   billón o más, 100 veces la mediana de la entidad o su valor adjudicado, o adjudicación de 1,5
+   veces el precio base) los decide el **código**; el **modelo** decide los demás y redacta la conclusión.
 4. **Anclaje (código):** la cita debe existir en el registro de SECOP y toda cifra de la conclusión
    debe estar en la evidencia. Si falla, el diagnóstico se repite hasta 3 veces.
 5. **Revisión humana:** el grafo se detiene y pide aprobar o rechazar los casos de confianza media
@@ -95,13 +96,15 @@ quedaron anclados con confianza alta al primer intento; 2 pasaron a revisión hu
 | --- | --- | --- |
 | Detección | 60/60 = 100 % (IC95 % 94–100 %) | ≥ 90 % |
 | Falsas alarmas | 0/60 = 0 % (IC95 % 0–6 %) | ≤ 10 % |
-| Causa correcta, decidida por código | 9/9 (IC95 % 70–100 %) | — |
-| Causa correcta, decidida por el modelo | 6/9 (IC95 % 35–88 %) | — |
-| Anclaje verificado | 15/18 | 100 % |
+| Causa correcta, total | 17/18 (IC95 % 74–99 %) | — |
+| … decidida por código | 14/14 | — |
+| … decidida por el modelo | 3/4 | — |
+| Anclaje verificado | 16/18 | 100 % |
 
-El modelo falla sobre todo en precios inflados: dos veces llamó «dato plausible» a un precio
-multiplicado por 1.000 o una adjudicación triplicada, y una vez devolvió una causa inválida.
-Esos casos no se cargan solos: los que no quedan anclados pasan a revisión humana.
+Antes de la regla de montos imposibles (que mide el precio contra la mediana de la propia
+entidad) la causa correcta era 15/18: el modelo llamaba «dato plausible» a precios inflados.
+El único error que queda es un precio ×1.000 que no llegó a 100 veces la mediana de su entidad
+y el modelo clasificó como «no funerario». Los 2 casos sin anclaje pasaron a revisión humana.
 
 ## Límites conocidos
 

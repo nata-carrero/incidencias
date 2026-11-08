@@ -1,65 +1,70 @@
-"""Reglas deterministas (sin LLM) que detectan incidencias en el panel.
+"""Reglas deterministas (sin LLM) que detectan incidencias en los procesos funerarios de SECOP II.
 
-Reproducen las reglas de Edward que se pueden recalcular desde el panel
-(cobertura en 100 %, saltos de ±50 %, habitantes por perro fuera de 1,7–11,4)
-y agregan las que necesita la evaluación con fallas sembradas
-(duplicados, códigos inválidos y municipios faltantes).
+Cada incidencia queda marcada, sin corregir: es la entrada del agente.
 """
+import numpy as np
 import pandas as pd
 
-from .herramientas import cargar_divipola
+from .herramientas import ID
 
-RAZON_MIN, RAZON_MAX = 1.7, 11.4
-SALTO_MAX = 0.5
-
-
-def _inc(regla, fila, valor, conclusion):
-    return {"cod_divipola": fila["cod_divipola"], "anio": int(fila["anio"]), "regla": regla,
-            "valor_citado": valor, "archivo": fila.get("fuente"), "pagina": fila.get("pagina"),
-            "municipio_pdf": fila.get("municipio_pdf"), "conclusion": conclusion}
+SIN_COSTO = {"Cancelado", "Borrador"}  # estados donde un precio en 0 no es raro
+Z_ATIPICO = 3.5  # sobre log10 del precio, con mediana y MAD por modalidad
+EXCESO_ADJUDICACION = 1.05  # adjudicado más de 5 % por encima del precio base
 
 
-def detectar(panel: pd.DataFrame) -> pd.DataFrame:
-    divipola = cargar_divipola()
-    p = panel[panel["cod_divipola"].notna()].copy()
+def _inc(regla, fila, valor, detalle, **extra):
+    return {"id_proceso": fila[ID], "regla": regla, "valor_citado": valor, "detalle": detalle,
+            "entidad": fila["Entidad"], "anio": fila["anio"], **extra}
+
+
+def detectar(p: pd.DataFrame) -> pd.DataFrame:
     out = []
 
-    for _, f in p[p.duplicated(["cod_divipola", "anio"], keep="first")].iterrows():
-        out.append(_inc("duplicado", f, f["cod_divipola"], "fila repetida para el mismo municipio y año"))
+    for _, f in p[p.duplicated(ID, keep="first")].iterrows():
+        out.append(_inc("id_duplicado", f, f[ID], "el mismo ID del proceso aparece en más de una fila"))
 
-    for _, f in p[~p["cod_divipola"].isin(divipola)].iterrows():
-        out.append(_inc("codigo_invalido", f, f["cod_divipola"], "el código no existe en DIVIPOLA"))
+    # Mismo proceso publicado con IDs distintos: misma entidad, referencia, año y precio base.
+    unicos = p.drop_duplicates(ID)
+    con_ref = unicos[unicos["referencia_base"] != ""]
+    clave = ["Nit Entidad", "referencia_base", "anio", "precio_base"]
+    for _, grupo in con_ref[con_ref.duplicated(clave, keep=False)].groupby(clave):
+        ids = list(grupo[ID])
+        for _, f in grupo.iloc[1:].iterrows():
+            out.append(_inc("posible_repetido", f, f["Referencia del Proceso"],
+                            "otro proceso de la misma entidad tiene igual referencia, año y precio base",
+                            otros_ids=[i for i in ids if i != f[ID]]))
 
-    # Faltante: el municipio aparece en otros años del reporte, pero no en este.
-    presentes = p.groupby("anio")["cod_divipola"].apply(set)
-    todos = set().union(*presentes)
-    for anio, codigos in presentes.items():
-        ref = p[p["anio"] == anio].iloc[0]
-        for cod in sorted(todos - codigos):
-            if cod in divipola:
-                out.append(_inc("municipio_faltante", {**ref, "cod_divipola": cod, "municipio_pdf": None},
-                                None, "el municipio no aparece en el reporte de ese año"))
+    for _, f in unicos[(unicos["Adjudicado"] == "Si") & (unicos["valor_adjudicado"] == 0)].iterrows():
+        out.append(_inc("adjudicado_sin_valor", f, f["Valor Total Adjudicacion"],
+                        "figura como adjudicado pero el valor adjudicado es $0"))
 
-    v = p[p["cod_divipola"].isin(divipola)].drop_duplicates(["cod_divipola", "anio"])
-    total = v["poblacion_perros"] + v["poblacion_gatos"]
-    cobertura = (v["vacunados_perros_gatos"] / total * 100).where(total > 0)
-    for _, f in v[cobertura.round(0) == 100].iterrows():
-        out.append(_inc("cobertura_100", f, 100, "cobertura exactamente en 100 %"))
+    activos = unicos[~unicos["Estado del Procedimiento"].isin(SIN_COSTO)]
+    for _, f in activos[activos["precio_base"] == 0].iterrows():
+        out.append(_inc("precio_base_cero", f, f["Precio Base"], "proceso activo con precio base de $0"))
 
-    v = v.sort_values(["cod_divipola", "anio"])
-    # Solo años consecutivos (2016→2017, 2023→2024), como en las incidencias de Edward.
-    anterior = v.groupby("cod_divipola")["poblacion_perros"].shift()
-    consecutivo = v["anio"] - v.groupby("cod_divipola")["anio"].shift() == 1
-    cambio = v["poblacion_perros"] / anterior - 1
-    for idx in v.index[(cambio.abs() > SALTO_MAX) & (anterior > 0) & consecutivo]:
-        f = v.loc[idx]
-        out.append(_inc("salto_poblacion", f, f"{cambio[idx]:+.1%}",
-                        "población de perros cambió más de ±50 % frente al año anterior"))
+    supera = unicos[(unicos["precio_base"] > 0) & (unicos["valor_adjudicado"] > EXCESO_ADJUDICACION * unicos["precio_base"])]
+    for _, f in supera.iterrows():
+        out.append(_inc("adjudicacion_supera_base", f, f["Valor Total Adjudicacion"],
+                        "el valor adjudicado supera en más de 5 % el precio base"))
 
-    medidos = v[(v["metodo_estimacion"] == "posible_medido") & (v["poblacion_perros"] > 0)]
-    razon = medidos["pob_dane"] / medidos["poblacion_perros"]
-    for idx in medidos.index[(razon < RAZON_MIN) | (razon > RAZON_MAX)]:
-        out.append(_inc("habitantes_por_perro_fuera_de_rango", medidos.loc[idx], round(razon[idx], 2),
-                        "fuera de 1,7-11,4 habitantes por perro"))
+    positivos = unicos[unicos["precio_base"] > 0].copy()
+    positivos["log"] = np.log10(positivos["precio_base"])
+    g = positivos.groupby("Modalidad de Contratacion")["log"]
+    mediana = g.transform("median")
+    mad = g.transform(lambda s: (s - s.median()).abs().median()) * 1.4826
+    z = (positivos["log"] - mediana) / mad.replace(0, np.nan)
+    for idx in positivos.index[z.abs() > Z_ATIPICO]:
+        f = positivos.loc[idx]
+        out.append(_inc("precio_atipico", f, f["Precio Base"],
+                        "precio base muy lejos de lo usual para su modalidad",
+                        mediana_modalidad=round(10 ** mediana[idx])))
+
+    for _, f in unicos[unicos["Codigo Principal de Categoria"].isin(["UNSPECIFIED", None, "No Definido"])].iterrows():
+        out.append(_inc("categoria_no_definida", f, f["Codigo Principal de Categoria"],
+                        "el proceso no tiene código UNSPSC definido"))
+
+    for _, f in unicos[unicos["clasificacion_equipo"] == "Mención relacionada / validar objeto"].iterrows():
+        out.append(_inc("clasificacion_por_validar", f, f["clasificacion_equipo"],
+                        "el término funerario aparece, pero no está claro que sea la compra principal"))
 
     return pd.DataFrame(out)

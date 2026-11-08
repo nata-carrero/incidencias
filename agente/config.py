@@ -8,10 +8,7 @@ from pathlib import Path
 
 RAIZ = Path(__file__).resolve().parents[1]
 DATA = RAIZ / "data"
-PANEL = DATA / "processed" / "panel_minsalud_municipal.parquet"
-INCIDENCIAS = DATA / "processed" / "incidencias.csv"
-DIVIPOLA = DATA / "raw" / "dane" / "dane_divipola.csv"
-PDFS = {"minsalud": DATA / "raw" / "minsalud", "ins": DATA / "raw" / "ins"}
+PROCESOS = DATA / "secop" / "procesos_funerarios_secop.parquet"
 RESULTADOS = RAIZ / "resultados"
 LOGS = RAIZ / "logs"
 
@@ -21,4 +18,4 @@ LLM_API_KEY = os.getenv("LLM_API_KEY", "ollama")  # Ollama ignora la clave
 LLM_TIMEOUT = int(os.getenv("LLM_TIMEOUT", "300"))
 
 MAX_INTENTOS = 3
-CAUSAS = ("error_extraccion", "cambio_metodo", "dato_plausible", "indeterminado")
+CAUSAS = ("error_de_registro", "registro_duplicado", "no_funerario", "dato_plausible", "indeterminado")

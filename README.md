@@ -51,7 +51,7 @@ departamento). Un interruptor **depura** los datos con las reglas del agente (fi
 repetidos, montos imposibles) para ver cuánto cambia cada cifra.
 
 ```powershell
-.venv\Scripts\python.exe -m streamlit run tableropp.py
+.venv\Scripts\python.exe -m streamlit run tablero\app.py
 ```
 
 Se abre en el navegador en `http://localhost:8501`. Con la base depurada, el valor adjudicado

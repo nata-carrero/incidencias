@@ -42,6 +42,22 @@ graph TD
 5. **Revisión humana:** el grafo se detiene y pide aprobar o rechazar los casos de confianza media
    o baja antes de guardar.
 
+## Tablero del mercado
+
+`tablero/app.py` es una aplicación en Streamlit que muestra el mercado público de servicios
+funerarios con los mismos datos: valor y procesos por año, por departamento y por modalidad,
+entidades que más contratan y concentración de proveedores (HHI y CR4, nacional y por
+departamento). Un interruptor **depura** los datos con las reglas del agente (filas y procesos
+repetidos, montos imposibles) para ver cuánto cambia cada cifra.
+
+```powershell
+.venv\Scripts\python.exe -m streamlit run tableropp.py
+```
+
+Se abre en el navegador en `http://localhost:8501`. Con la base depurada, el valor adjudicado
+2017–2026 es de unos $86.745 millones y el HHI nacional es 523 (poco concentrado); sin depurar,
+un solo registro de Rionegro lleva el total a $814 billones y el HHI a casi 10.000.
+
 ## Datos
 
 `data/secop/procesos_funerarios_secop.parquet`: 3.319 filas (3.138 procesos) de SECOP II,
@@ -55,7 +71,7 @@ Python 3.12 y [Ollama](https://ollama.com) con Qwen 2.5 7B (gratis, local):
 
 ```powershell
 py -3.12 -m venv .venv
-.venv\Scripts\python.exe -m pip install langgraph openai pandas pyarrow pytest
+.venv\Scripts\python.exe -m pip install -r requirements.txt
 ollama pull qwen2.5:7b
 ```
 

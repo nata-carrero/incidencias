@@ -1,0 +1,7 @@
+langgraph
+openai
+pandas
+pyarrow
+pytest
+streamlit
+altair

@@ -9,6 +9,7 @@ Las reglas (máximo 3 intentos, causas obvias decididas por código, anclaje ver
 nada se carga sin revisión humana) están en el grafo, así que el modelo no puede saltárselas.
 """
 import json
+from pathlib import Path
 from typing import Any, TypedDict
 
 import pandas as pd
@@ -87,7 +88,8 @@ def _limpio(valor):
     return valor.item() if hasattr(valor, "item") else valor
 
 
-def construir(procesos: pd.DataFrame | None = None, checkpointer=None):
+def construir(procesos: pd.DataFrame | None = None, checkpointer=None, carpeta_resultados=None):
+    """carpeta_resultados: dónde guardar diagnosticos.csv (por defecto resultados/)."""
     procesos = h.cargar_procesos() if procesos is None else procesos
 
     def orquestador(estado: Estado) -> Estado:
@@ -149,8 +151,9 @@ def construir(procesos: pd.DataFrame | None = None, checkpointer=None):
         for r in estado.get("resultados", []):
             estado_rev = "aprobado" if r["confianza"] == "alta" else decision.get(str(r["id"]), "pendiente")
             resultados.append({**r, "revision_humana": estado_rev})
-        config.RESULTADOS.mkdir(exist_ok=True)
-        pd.DataFrame(resultados).to_csv(config.RESULTADOS / "diagnosticos.csv", index=False, encoding="utf-8-sig")
+        carpeta = Path(carpeta_resultados) if carpeta_resultados else config.RESULTADOS
+        carpeta.mkdir(parents=True, exist_ok=True)
+        pd.DataFrame(resultados).to_csv(carpeta / "diagnosticos.csv", index=False, encoding="utf-8-sig")
         return {"resultados": resultados}
 
     g = StateGraph(Estado)

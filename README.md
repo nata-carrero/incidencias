@@ -58,6 +58,63 @@ Se abre en el navegador en `http://localhost:8501`. Con la base depurada, el val
 2017–2026 es de unos $86.745 millones y el HHI nacional es 523 (poco concentrado); sin depurar,
 un solo registro de Rionegro lleva el total a $814 billones y el HHI a casi 10.000.
 
+## Integración
+
+La app junta tres piezas sobre los mismos datos y el mismo código, sin duplicar lógica:
+
+```mermaid
+graph LR
+  datos[(SECOP II · parquet)] --> reglas["agente/validaciones.py (reglas)"]
+  datos --> mercado["tablero/datos.py (depuración, HHI, CR4)"]
+  reglas --> grafo["agente/grafo.py (LangGraph + anclaje)"]
+  llm["LLM: Qwen local o DeepSeek"] --> grafo
+  mercado --> app["tablero/app.py (Streamlit)"]
+  reglas --> pestana["tablero/incidencias.py (pestaña Incidencias)"]
+  grafo --> pestana --> app
+  mercado --> api["api/main.py (FastAPI)"]
+  reglas --> api
+  grafo --> api
+```
+
+- **Tablero** (`tablero/app.py`): las cinco pestañas del mercado y la pestaña **Incidencias**, donde se
+  eligen hasta 5 incidencias, el agente las diagnostica y una persona aprueba o rechaza los casos de
+  confianza media o baja con botones. Los resultados se descargan en CSV.
+- **API** (`api/main.py`): `GET /salud`, `GET /procesos`, `GET /incidencias`, `GET /mercado/concentracion`
+  y `POST /diagnosticar/{id_proceso}`. Documentación automática en `http://127.0.0.1:8000/docs`.
+- **Anclaje** (consulta de documentos, repo de Edward): no está integrado todavía; requiere documentos
+  reales del equipo y librerías pesadas que no caben en la app en línea.
+
+### Cómo correr cada parte (Windows)
+
+```powershell
+.venv\Scripts\python.exe -m streamlit run tablero\app.py     # tablero, http://localhost:8501
+.venv\Scripts\python.exe -m uvicorn api.main:app --reload     # API, http://127.0.0.1:8000/docs
+.venv\Scripts\python.exe -m pytest                            # pruebas
+```
+
+### Modelo de lenguaje y secretos
+
+Por defecto el agente usa Qwen 2.5 7B local con Ollama. Para DeepSeek se definen tres valores, sin
+escribirlos nunca en el repositorio:
+
+```toml
+# .streamlit/secrets.toml (ignorado por Git) o, en la nube, Settings → Secrets
+LLM_API_KEY = "<clave>"
+LLM_BASE_URL = "https://api.deepseek.com"
+LLM_MODEL = "<nombre vigente del modelo, ver api-docs.deepseek.com/updates>"
+```
+
+Las variables de entorno con el mismo nombre tienen prioridad. `agente.llm.probar_conexion()` hace una
+llamada mínima y explica el problema (clave, modelo o conexión) sin mostrar la clave. Con DeepSeek se
+apaga el modo de razonamiento para que `temperature=0` tenga efecto.
+
+### Límites de la integración
+
+- En la app en línea (Streamlit Community Cloud) no hay Ollama: sin una clave de DeepSeek en Secrets, la
+  pestaña Incidencias muestra las alertas de las reglas y avisa que el diagnóstico no está disponible.
+- Los diagnósticos hechos en la app se pierden al reiniciarla; por eso se descargan en CSV.
+- Las versiones de `requirements.txt` están fijas para que la nube no instale versiones nuevas sin probar.
+
 ## Datos
 
 `data/secop/procesos_funerarios_secop.parquet`: 3.319 filas (3.138 procesos) de SECOP II,
@@ -130,4 +187,5 @@ y el modelo clasificó como «no funerario». Los 2 casos sin anclaje pasaron a 
 - Que una cita exista no prueba que la conclusión sea correcta: la revisión humana sigue siendo necesaria.
 - Se usa el precio base y el valor adjudicado publicados, sin adiciones ni modificaciones del contrato.
 - El diseño original indica DeepSeek y Langfuse con Docker; aquí se usa Qwen local por costo.
-- Uso de IA: el código se escribió con ayuda de Claude Code.
+- Uso de IA: el código se escribió con ayuda de Claude Code. El módulo Anclaje (aún no integrado) es
+  del repositorio de Edward (edwardmorarom/Anclaje).

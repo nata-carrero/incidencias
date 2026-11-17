@@ -11,6 +11,7 @@ import altair as alt
 import pandas as pd
 import streamlit as st
 
+from tablero import incidencias
 from tablero.datos import base_tablero, concentracion, depurar
 
 AZUL = "#2a78d6"  # una sola tonalidad: todos los gráficos comparan magnitudes de una misma medida
@@ -112,7 +113,8 @@ if not depura and sin_depurar["monto_imposible"].any():
                "Por ejemplo, un valor adjudicado de $813.880.846.788.409 en Rionegro. "
                "Activa «Depurar con las reglas del agente» para quitarlos.")
 
-pestanas = st.tabs(["Evolución", "Dónde se contrata", "Quién contrata", "Concentración", "Qué se depuró"])
+pestanas = st.tabs(["Evolución", "Dónde se contrata", "Quién contrata", "Concentración", "Qué se depuró",
+                   "Incidencias"])
 
 # --- Evolución -----------------------------------------------------------------------------
 with pestanas[0]:
@@ -209,6 +211,10 @@ with pestanas[4]:
         st.dataframe(malos, hide_index=True, use_container_width=True,
                      column_config={"URLProceso": st.column_config.LinkColumn("SECOP", display_text="ver proceso")})
     st.caption("Las reglas y los diagnósticos vienen del agente de incidencias del mismo proyecto.")
+
+# --- Incidencias (agente + revisión humana) ---------------------------------------------------
+with pestanas[5]:
+    incidencias.mostrar()  # el código está en tablero/incidencias.py
 
 st.divider()
 st.caption("Fuente: SECOP II – Procesos de Contratación (datos.gov.co), descarga del 6 de octubre de 2026. "
